@@ -15,6 +15,20 @@ export class Harvester implements IRole {
       }
       creep.say("🔄 harvest");
     } else {
+      let extensions = creep.room.find(FIND_MY_STRUCTURES, {
+        filter: {structureType: STRUCTURE_EXTENSION}
+      }) as StructureExtension[];
+
+      for(let i = 0; i < extensions.length; i++) {
+        let extension = extensions[i];
+        if (extension.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+          if (creep.transfer(extension, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+            creep.moveTo(extension, { visualizePathStyle: { stroke: "#ffffff" } });
+          }
+          break;
+        }
+      }
+
       if (creep.transfer(Game.spawns["Spawn1"], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
         creep.moveTo(Game.spawns["Spawn1"], { visualizePathStyle: { stroke: "#ffffff" } });
       }

@@ -3,6 +3,7 @@ import { Utilities } from 'utils/Utilities';
 import { Builder } from 'roles/Builder';
 import { Harvester } from "roles/Harvester";
 import { Upgrader } from "roles/Upgrader";
+import { RoomService } from "services/RoomService";
 
 declare global {
   /*
@@ -23,6 +24,8 @@ declare global {
     role: string;
     room: string;
     working: boolean;
+    building: boolean;
+    upgrading: boolean;
   }
 
   // Syntax for adding proprties to `global` (ex "global.log")
@@ -38,39 +41,44 @@ declare global {
 export const loop = ErrorMapper.wrapLoop(() => {
   console.log(`Current game tick is ${Game.time}`);
   var myRoom = Game.rooms["E35N17"];
-    var constructionSites = myRoom.find(FIND_CONSTRUCTION_SITES);
 
-    const maxHarvester = 3;
-    const maxUpgraders = 2;
-    const maxBuilders = 3;
+  const roomService = new RoomService(myRoom);
 
-    if (Utilities.harvesterCount() < maxHarvester) {
-      Utilities.spawnCreep("harvester");
+  //console.log(`[${roomService.name}] energy storage: ${roomService.calculateEnergyStorageCapacity()}`);
+
+  var constructionSites = myRoom.find(FIND_CONSTRUCTION_SITES);
+
+  const maxHarvester = 3;
+  const maxUpgraders = 2;
+  const maxBuilders = 3;
+
+  if (Utilities.harvesterCount() < maxHarvester) {
+    Utilities.spawnCreep("harvester");
+  }
+
+  if (Utilities.upgraderCount() < maxUpgraders) {
+    Utilities.spawnCreep("upgrader");
+  }
+
+  if (constructionSites.length > 0 && Utilities.builderCount() < maxBuilders) {
+    Utilities.spawnCreep("builder");
+  }
+
+  for (const i in Game.creeps) {
+    var creep = Game.creeps[i];
+    if (Utilities.isHarvester(creep)) {
+      const roleHarvester = new Harvester(creep);
+      roleHarvester.run(creep);
     }
-
-    if (Utilities.upgraderCount() < maxUpgraders) {
-      Utilities.spawnCreep("upgrader");
+    if (Utilities.isUpgrader(creep)) {
+      const roleUpgrader = new Upgrader(creep);
+      roleUpgrader.run(creep);
     }
-
-    if (constructionSites.length > 0 && Utilities.builderCount() < maxBuilders) {
-      Utilities.spawnCreep("builder");
+    if (Utilities.isBuilder(creep)) {
+      const roleBuilder = new Builder(creep);
+      roleBuilder.run(creep);
     }
-
-    for (const i in Game.creeps) {
-      var creep = Game.creeps[i];
-      if (Utilities.isHarvester(creep)) {
-        const roleHarvester = new Harvester(creep);
-        roleHarvester.run(creep);
-      }
-      if (Utilities.isUpgrader(creep)) {
-        const roleUpgrader = new Upgrader(creep);
-        roleUpgrader.run(creep);
-      }
-      if (Utilities.isBuilder(creep)) {
-        const roleBuilder = new Builder(creep);
-        roleBuilder.run(creep);
-      }
-    }
+  }
 
   // Automatically delete memory of missing creeps
   for (const name in Memory.creeps) {
